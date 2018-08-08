@@ -1,4 +1,4 @@
-defmodule BitTorent.Peer.Sup do
+defmodule BitTorrent.Peer.Sup do
   use Supervisor
 
   def start_link(args) do

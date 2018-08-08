@@ -1,12 +1,19 @@
 defmodule BitTorrent.Peer.Request do
-  def send(data) do
+
+  @peer_id "-qB3310-1234567890.f"
+  @port 6881
+
+  def send({announce_url, info_hash}) do
     params = %{
-      info_hash: data.info_hash,
-      peer_id: data.peer_id,
-      port: data.port
+      info_hash: info_hash,
+      peer_id: @peer_id,
+      port: @port
     }
+
     handle_response(
-      HTTPoison.get(data.announce_url, [{"Accept", "application/json"}], params: data), info_hash
+      HTTPoison.get(announce_url,
+          [{"Accept", "application/json"}],
+          params: params), info_hash
     )
   end
 

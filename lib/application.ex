@@ -8,8 +8,8 @@ defmodule Bittorrent.Application do
   def start(_type, _args) do
     # List all child processes to be supervised
     children = [
-      supervisor(Task.Supervisor, [[name: BitTorrent.TaskSupervisor]]),
-      supervisor(BitTorrent.Peer.Sup, [name: Peer.Supervisor])
+      {Task.Supervisor, name: BitTorrent.TaskSupervisor},
+      {BitTorrent.Peer.Sup, [name: Peer.Supervisor]}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
