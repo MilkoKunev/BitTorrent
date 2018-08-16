@@ -2,6 +2,8 @@ defmodule BitTorrent.Connection.Handler do
 
   use GenServer
 
+  alias BitTorrent.Message
+
   def start_link() do
     GenServer.call(__MODULE__, %{})
   end
@@ -17,7 +19,7 @@ defmodule BitTorrent.Connection.Handler do
   end
 
   def handle_call({:create_socket, address, port, info_hash, peer_id, pid}, from, state) do
-    handshake = Message.build(:handshake, address, port, info_hash, peer_id)
+    handshake = Message.build(:handshake, info_hash, peer_id)
 
     case :gen_tcp.connect(to_charlist(address), port, [:binary]) do
       {:ok, socket} ->
