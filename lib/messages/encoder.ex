@@ -1,4 +1,4 @@
-defmodule BitTorrent.Message.Encoder do
+defmodule BitTorrent.Message.API do
 
   require Logger
 
@@ -27,9 +27,9 @@ defmodule BitTorrent.Message.Encoder do
   @request_id 6
   @piece_id 7
 
-  def encode(:handshake, args \\ %) do
-    build_message()
-  end
+  # def encode(:handshake, args \\ %) do
+  #   build_message()
+  # end
 
 
 
