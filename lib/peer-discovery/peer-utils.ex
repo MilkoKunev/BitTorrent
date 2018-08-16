@@ -3,5 +3,4 @@ defmodule BitTorrent.Peer.Utils do
     [new_torrent | list]
     |> Enum.uniq
   end
-
 end
