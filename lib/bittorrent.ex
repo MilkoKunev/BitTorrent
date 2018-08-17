@@ -1,3 +1,3 @@
-defmodule Bittorrent do
+defmodule Bittorrent.CLI do
 
 end
