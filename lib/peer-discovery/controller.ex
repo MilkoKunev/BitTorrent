@@ -1,6 +1,6 @@
-defmodule BitTorrent.Peer.Controller do
-  alias BitTorrent.Peer.Controller
-  alias BitTorrent.Peer.Utils
+defmodule BitTorrent.Discovery.Controller do
+  alias BitTorrent.Discovery.Controller
+  alias BitTorrent.Discovery.Utils
 
   use GenServer
 
@@ -8,7 +8,7 @@ defmodule BitTorrent.Peer.Controller do
 
   require Logger
 
-  @interval 10000
+  @interval 1000000
 
   # API
   def start_link() do
@@ -27,12 +27,14 @@ defmodule BitTorrent.Peer.Controller do
   end
 
   def handle_call({:get_peers, info_hash, announce_url}, _from, state) do
-    state = %{state | torrent: Utils.insert_torrent(state.torrent, {info_hash, announce_url})}
+    state = %{state | torrents: Utils.insert_torrent(state.torrents, {info_hash, announce_url})}
     peers = case Map.get(state.peers, info_hash) do
       nil ->
-        Task.Supervisor.async(BitTorrent.TaskSupervisor, fn ->
-          BitTorrent.Peer.Request.send({info_hash, announce_url})
-        end) |> Task.await
+        {:ok, {_info_hash, peers}} = Task.Supervisor.async(BitTorrent.TaskSupervisor, fn ->
+                                BitTorrent.Discovery.Request.send({info_hash, announce_url})
+                              end)
+                              |> Task.await
+        peers
       value ->
         value
     end
@@ -63,7 +65,7 @@ defmodule BitTorrent.Peer.Controller do
 
   defp keep_alive([head | tail]) do
     Task.Supervisor.async_nolink(BitTorrent.TaskSupervisor, fn ->
-      BitTorrent.Peer.Request.send(head)
+      BitTorrent.Discovery.Request.send(head)
     end)
     keep_alive(tail)
   end

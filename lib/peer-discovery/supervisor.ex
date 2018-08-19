@@ -1,4 +1,4 @@
-defmodule BitTorrent.Peer.Sup do
+defmodule BitTorrent.Discovery.Sup do
   use Supervisor
 
   def start_link(args) do
@@ -9,7 +9,7 @@ defmodule BitTorrent.Peer.Sup do
     children = [
       %{
         id: Peer.Controller,
-        start: {BitTorrent.Peer.Controller, :start_link, []}
+        start: {BitTorrent.Discovery.Controller, :start_link, []}
       }
     ]
 
