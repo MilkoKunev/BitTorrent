@@ -57,7 +57,17 @@ defmodule BitTorrent.Message do
 
   # TODO: Add build methods for :have, :bitfield, :piece, when acceptor/listener is implemeented
 
-  def decode(<<@keep_alive_length::size(32), rest::bytes>>) do
+  def decode(<<@pstrlen::size(8), pstr::bytes-size(@pstrlen), reserved::bytes-size(8), info_hash::bytes-size(20), peer_id::bytes-size(20)>>) do
+      %{
+        type: :handshake,
+        pstr: pstr,
+        reserved: reserved,
+        info_hash: info_hash,
+        peer_id: peer_id,
+      }
+  end
+
+  def decode(<<@keep_alive_length::size(32)>>) do
     %{
       type: :keep_alive
     }
@@ -94,14 +104,14 @@ defmodule BitTorrent.Message do
     }
   end
 
-  def decode(<<length::size(32), @bitfield_id::size(8)>>) do
+  def decode(<<length::size(32), @bitfield_id::size(8), bitfield::bytes>>) do
     %{
       type: :bitfield,
       bitfield: bitfield
     }
   end
 
-  def decode(<<@length::size(32), @piece_id::size(8), index::size(32), begin::size(32)>>) do
+  def decode(<<length::size(32), @piece_id::size(8), index::size(32), begin::size(32), rest::bytes>>) do
     %{
       type: :piece,
       index: index,
