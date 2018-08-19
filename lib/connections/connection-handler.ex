@@ -4,41 +4,57 @@ defmodule BitTorrent.Connection.Handler do
 
   alias BitTorrent.Message
 
-  def start_link() do
-    GenServer.call(__MODULE__, %{})
+  def start_link(_args) do
+    GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
-  def create_socket(address, port, info_hash, peer_id, pid) do
-    request = {:create_socket, address, port, info_hash, peer_id, pid}
+  def create_socket(address, port, info_hash, peer_id) do
+    request = {:create_socket, address, port, info_hash, peer_id}
     GenServer.call(__MODULE__, request)
   end
 
   # CALLBACKS
   def init(state) do
-    {:reply, state}
+    {:ok, state}
   end
 
-  def handle_call({:create_socket, address, port, info_hash, peer_id, pid}, from, state) do
+  def handle_call({:create_socket, address, port, info_hash, peer_id}, from, state) do
     handshake = Message.build(:handshake, info_hash, peer_id)
 
-    case :gen_tcp.connect(to_charlist(address), port, [:binary]) do
+    case :gen_tcp.connect(to_charlist(address), port, [:binary, active: false, packet: :raw]) do
       {:ok, socket} ->
         :gen_tcp.send(socket, handshake)
         Task.Supervisor.async_nolink(BitTorrent.TaskSupervisor, fn ->
-          data = :gen_tcp.recv(socket, 0)
-          reply_with_socket(data, state)
+          # Get only handshake message, which is exactly 68 bytes
+          :gen_tcp.recv(socket, 68)
         end)
-        {:noreply, Map.put(state, peer_id, {address, info_hash, pid, from, socket})}
+        # TODO: Set peer_id or something else as key. Problem:
+        # Returned peer_id from handshake is different each time
+        {:noreply, Map.put(state, info_hash, {info_hash, from, socket})}
       {_, _} ->
+        IO.inspect("ERROR")
         {:reply, :error, state}
       end
   end
 
-  defp reply_with_socket(data, state) do
-    msg = Message.decode(data)
-    socket_info = Map.get(state, data.peer_id)
-    :gen_tcp.controlling_process(socket_info.pid, socket_info.socket)
-    GenServer.reply(socket_info.from, socket_info.socket)
+  def handle_info({ref, {:ok, data}}, state) do
+    IO.inspect("RECEIVED MESSAGE")
+    # TODO: Check if returned handshake is the same as the our
+    handshake =  Message.decode(data)
+    key = Map.get(handshake, :info_hash)
+    {_info_hash, from = {pid, _ref}, socket} = Map.get(state, key)
+    case :gen_tcp.controlling_process(socket, pid) do
+      :ok ->
+        GenServer.reply(from, {:ok, socket})
+      {:error, reason} ->
+        GenServer.reply(from, {:error, reason})
+    end
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _, _, _, _}, state) do
+    IO.inspect ("Task ended")
+    {:noreply, state}
   end
 
 end
