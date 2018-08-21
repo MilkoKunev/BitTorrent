@@ -39,7 +39,8 @@ defmodule BitTorrent.Connection.Handler do
   def handle_info({ref, {:ok, data}}, state) do
     IO.inspect("RECEIVED MESSAGE")
     # TODO: Check if returned handshake is the same as our
-    handshake =  Message.decode(data)
+    message =  Message.decode(data)
+    [handshake | _tail] = message
     key = Map.get(handshake, :info_hash)
     {_info_hash, from = {pid, _ref}, socket} = Map.get(state, key)
     case :gen_tcp.controlling_process(socket, pid) do

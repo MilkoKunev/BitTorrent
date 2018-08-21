@@ -57,82 +57,116 @@ defmodule BitTorrent.Message do
 
   # TODO: Add build methods for :have, :bitfield, :piece, when acceptor/listener is implemeented
 
-  def decode(<<@pstrlen::size(8), pstr::bytes-size(@pstrlen), reserved::bytes-size(8), info_hash::bytes-size(20), peer_id::bytes-size(20)>>) do
+  def decode(message) do
+    _decode(message, [])
+  end
+
+  defp _decode(<<@pstrlen::size(8), pstr::bytes-size(@pstrlen), reserved::bytes-size(8), info_hash::bytes-size(20), peer_id::bytes-size(20), rest::bytes>>, acc) do
+      data =
+        %{
+          type: :handshake,
+          pstr: pstr,
+          reserved: reserved,
+          info_hash: info_hash,
+          peer_id: peer_id,
+          length: 68
+        }
+      _decode(rest, acc ++ [data])
+  end
+
+  defp _decode(<<@keep_alive_length::size(32), rest::bytes>>, acc) do
+    data =
       %{
-        type: :handshake,
-        pstr: pstr,
-        reserved: reserved,
-        info_hash: info_hash,
-        peer_id: peer_id,
-        length: 68
+        type: :keep_alive
       }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<@keep_alive_length::size(32)>>) do
-    %{
-      type: :keep_alive
-    }
+  defp _decode(<<@state_length::size(32), @choke_id::size(8), rest::bytes>>, acc) do
+    data =
+      %{
+        type: :choke,
+        length: @state_length
+      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<@state_length::size(32), @choke_id::size(8)>>) do
-    %{
-      type: :choke,
-      length: @state_length
-    }
+  defp _decode(<<@state_length::size(32), @unchoke_id::size(8), rest::bytes>>, acc) do
+    data =
+      %{
+        type: :unchoke,
+        length: @state_length
+      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<@state_length::size(32), @unchoke_id::size(8)>>) do
-    %{
-      type: :unchoke,
-      length: @state_length
-    }
+  defp _decode(<<@state_length::size(32), @interested_id::size(8), rest::bytes>>, acc) do
+    data =
+      %{
+        type: :interested,
+        length: @state_length
+      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<@state_length::size(32), @interested_id::size(8)>>) do
-    %{
-      type: :interested,
-      length: @state_length
-    }
+  defp _decode(<<@state_length::size(32), @not_interested_id::size(8), rest::bytes>>, acc) do
+    data =
+      %{
+        type: :not_interested,
+        length: @state_length
+      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<@state_length::size(32), @not_interested_id::size(8)>>) do
-    %{
-      type: :not_interested,
-      length: @state_length
-    }
+  defp _decode(<<@have_length::size(32), @have_id::size(8), piece_index::size(32), rest::bytes>>, acc) do
+    data =
+      %{
+        type: :have,
+        piece_index: piece_index,
+        length: @have_length
+      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<@have_length::size(32), @have_id::size(8), piece_index::bytes-size(4)>>) do
-    %{
-      type: :have,
-      piece_index: piece_index,
-      length: @have_length
-    }
+  defp _decode(<<length::size(32), @bitfield_id::size(8), rest::bytes>>, acc) do
+    length = length - 1
+    <<bitfield::bytes-size(length), rest::bytes>> = rest
+    data =
+      %{
+        type: :bitfield,
+        bitfield: bitfield,
+        length: length * 8
+      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(<<length::size(32), @bitfield_id::size(8), bitfield::bytes>>) do
-    %{
-      type: :bitfield,
-      bitfield: bitfield,
-      length: length
-    }
-  end
-
-  def decode(<<length::size(32), @piece_id::size(8), index::size(32), begin::size(32), rest::bytes>>) do
-    %{
-      type: :piece,
-      index: index,
-      offset: begin,
-      block: rest
+  defp _decode(<<length::size(32), @piece_id::size(8), index::size(32), begin::size(32), rest::bytes>>, acc) do
+    length = length - 9
+    <<block::bytes-size(length), rest::bytes>> = rest
+    data =
+      %{
+        type: :piece,
+        index: index,
+        offset: begin,
+        block: block,
+        length: length * 8
      }
+    _decode(rest, acc ++ [data])
   end
 
-  def decode(binary) do
-    %{
-      type: :unknown
-    }
+  defp _decode(binary, acc) when byte_size(binary) == 0 do
+    acc
   end
 
-    # TODO: Add request decode message when acceptor/listener is implemented
+  defp _decode(binary, acc) do
+    data =
+      %{
+        type: :unknown
+      }
+
+    acc ++ [data]
+  end
+
+  # TODO: Add request decode message when acceptor/listener is implemented
 
 end
