@@ -5,7 +5,7 @@ defmodule BitTorrent.Message do
   # used in handshake msg
   @pstr "BitTorrent protocol"
   @pstrlen 19
-  @reserved_bits << 0 :: size(64) >>
+  @reserved_bits <<0::size(64)>>
   @block_length 16384
 
   # Fixed lengths
@@ -28,7 +28,7 @@ defmodule BitTorrent.Message do
   @piece_id 7
 
   def build(:handshake, info_hash, peer_id) do
-    <<@pstrlen, @pstr, @reserved_bits, info_hash::bytes-size(20), peer_id::bytes-size(20)>>
+    <<@pstrlen::size(8), @pstr, @reserved_bits, info_hash::bytes-size(20), peer_id::bytes-size(20)>>
   end
 
   def build(:interested) do
@@ -64,6 +64,7 @@ defmodule BitTorrent.Message do
         reserved: reserved,
         info_hash: info_hash,
         peer_id: peer_id,
+        length: 68
       }
   end
 
@@ -75,39 +76,45 @@ defmodule BitTorrent.Message do
 
   def decode(<<@state_length::size(32), @choke_id::size(8)>>) do
     %{
-      type: :choke
+      type: :choke,
+      length: @state_length
     }
   end
 
   def decode(<<@state_length::size(32), @unchoke_id::size(8)>>) do
     %{
-      type: :choke
+      type: :choke,
+      length: @state_length
     }
   end
 
   def decode(<<@state_length::size(32), @interested_id::size(8)>>) do
     %{
-      type: :interested
+      type: :interested,
+      length: @state_length
     }
   end
 
   def decode(<<@state_length::size(32), @not_interested_id::size(8)>>) do
     %{
-      type: :not_interested
+      type: :not_interested,
+      length: @state_length
     }
   end
 
   def decode(<<@have_length::size(32), @have_id::size(8), piece_index::bytes-size(4)>>) do
     %{
       type: :have,
-      piece_index: piece_index
+      piece_index: piece_index,
+      length: @have_length
     }
   end
 
   def decode(<<length::size(32), @bitfield_id::size(8), bitfield::bytes>>) do
     %{
       type: :bitfield,
-      bitfield: bitfield
+      bitfield: bitfield,
+      length: length
     }
   end
 
