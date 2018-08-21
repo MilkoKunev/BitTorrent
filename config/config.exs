@@ -31,6 +31,6 @@ use Mix.Config
 
 config :bittorrent,
         port: 6881,
-        client_id: "-UT3310-1234567890.f",
+        client_id: "-qB3310-1234567890.f",
         block_length: 16384
 

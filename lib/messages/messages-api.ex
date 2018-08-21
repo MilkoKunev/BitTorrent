@@ -83,7 +83,7 @@ defmodule BitTorrent.Message do
 
   def decode(<<@state_length::size(32), @unchoke_id::size(8)>>) do
     %{
-      type: :choke,
+      type: :unchoke,
       length: @state_length
     }
   end
