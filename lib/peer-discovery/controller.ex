@@ -26,22 +26,33 @@ defmodule BitTorrent.Discovery.Controller do
     {:ok, state}
   end
 
-  def handle_call({:get_peers, info_hash, announce_url}, _from, state) do
+  def handle_call({:get_peers, info_hash, announce_url}, from, state) do
     state = %{state | torrents: Utils.insert_torrent(state.torrents, {info_hash, announce_url})}
-    peers = case Map.get(state.peers, info_hash) do
+    case Map.get(state.peers, info_hash) do
       nil ->
-        {:ok, {_info_hash, peers}} = Task.Supervisor.async(BitTorrent.TaskSupervisor, fn ->
-                                BitTorrent.Discovery.Request.send({info_hash, announce_url})
-                              end)
-                              |> Task.await
-        peers
-      value ->
-        value
+        Task.Supervisor.async_nolink(BitTorrent.TaskSupervisor, fn ->
+            result = BitTorrent.Discovery.Request.send({info_hash, announce_url})
+            {:received_peers, from, result}
+        end)
+        {:noreply, state}
+      peers ->
+        {:reply, peers, %{state | peers: Map.put(state.peers, info_hash, peers)}}
     end
-    {:reply, peers, %{state | peers: Map.put(state.peers, info_hash, peers)}}
   end
 
-  def handle_info({ref, result}, state) do
+  def handle_info({ref, {:received_peers, from, result}}, state) do
+    case result do
+      {:error, reason} ->
+        GenServer.reply(from, nil)
+        {:noreply, state}
+      {:ok, {info_hash, peers}} ->
+        GenServer.reply(from, peers)
+        {:noreply, %{state | peers: Map.put(state.peers, info_hash, peers)}}
+    end
+  end
+
+  def handle_info({ref, {:keeping_conn_alive, result}}, state) do
+    IO.inspect("Discovery: Received message")
     peers_map = case result do
       {:error, reason} ->
         Logger.info("Error in receiving peers: #{reason}")
@@ -49,6 +60,11 @@ defmodule BitTorrent.Discovery.Controller do
       {:ok, {info_hash, peers}} ->
         Map.put(state.peers, info_hash, peers)
     end
+    {:noreply, state}
+  end
+
+  def handle_info({:DOWN, _, _, _, _}, state) do
+    IO.inspect ("Discovery task ended")
     {:noreply, state}
   end
 
@@ -65,7 +81,8 @@ defmodule BitTorrent.Discovery.Controller do
 
   defp keep_alive([head | tail]) do
     Task.Supervisor.async_nolink(BitTorrent.TaskSupervisor, fn ->
-      BitTorrent.Discovery.Request.send(head)
+      result = BitTorrent.Discovery.Request.send(head)
+      {:keeping_conn_alive, result}
     end)
     keep_alive(tail)
   end

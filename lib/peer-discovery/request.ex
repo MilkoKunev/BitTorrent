@@ -1,14 +1,11 @@
 defmodule BitTorrent.Discovery.Request do
 
-  @peer_id "-qB3310-1234567890.f"
-  @port 6881
-
   def send({info_hash, announce_url}) do
     IO.inspect("Sending request")
     params = %{
       info_hash: info_hash,
-      peer_id: @peer_id,
-      port: @port
+      peer_id: Application.get_env(:bittorrent, :client_id),
+      port:  Application.get_env(:bittorrent, :port)
     }
 
     handle_response(
