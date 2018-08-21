@@ -23,7 +23,9 @@ defmodule Bittorrent.MixProject do
   defp deps do
     [
       {:bento, "~> 0.9"},
-      {:httpoison, "~> 1.0"}
+      {:httpoison, "~> 1.0"},
+      {:bit_field_set, "~> 1.2.0"},
+      {:inet_cidr, "~> 1.0.0"}
     ]
   end
 end
