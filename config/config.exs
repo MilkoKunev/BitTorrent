@@ -28,3 +28,9 @@ use Mix.Config
 # here (which is why it is important to import them last).
 #
 #     import_config "#{Mix.env}.exs"
+
+config :bittorrent,
+        port: 6881,
+        client_id: "-UT3310-1234567890.f",
+        block_length: 16384
+
