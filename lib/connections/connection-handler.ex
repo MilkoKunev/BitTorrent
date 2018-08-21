@@ -21,7 +21,7 @@ defmodule BitTorrent.Connection.Handler do
   def handle_call({:create_socket, address, port, info_hash, peer_id}, from, state) do
     handshake = Message.build(:handshake, info_hash, peer_id)
 
-    case :gen_tcp.connect(to_charlist(address), port, [:binary, active: false, packet: :raw]) do
+    case :gen_tcp.connect(InetCidr.parse_address!(address), port, [:binary, active: false, packet: :raw]) do
       {:ok, socket} ->
         :gen_tcp.send(socket, handshake)
         Task.Supervisor.async_nolink(BitTorrent.TaskSupervisor, fn ->
@@ -31,15 +31,14 @@ defmodule BitTorrent.Connection.Handler do
         # TODO: Set peer_id or something else as key. Problem:
         # Returned peer_id from handshake is different each time
         {:noreply, Map.put(state, info_hash, {info_hash, from, socket})}
-      {_, _} ->
-        IO.inspect("ERROR")
+      {:error, reason} ->
         {:reply, :error, state}
       end
   end
 
   def handle_info({ref, {:ok, data}}, state) do
     IO.inspect("RECEIVED MESSAGE")
-    # TODO: Check if returned handshake is the same as the our
+    # TODO: Check if returned handshake is the same as our
     handshake =  Message.decode(data)
     key = Map.get(handshake, :info_hash)
     {_info_hash, from = {pid, _ref}, socket} = Map.get(state, key)
