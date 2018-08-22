@@ -20,6 +20,7 @@ defmodule Torrent do
      receiver_name: nil,
      transmiter_name: nil,
      bitfield_name: nil,
+     file_name: nil
     )
 
     def new(info_hash, piece_length, length, pieces, name, block_length, peers) do

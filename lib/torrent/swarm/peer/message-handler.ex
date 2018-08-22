@@ -2,6 +2,7 @@ defmodule BitTorrent.Peer.Message.Handler do
 
   alias BitTorrent.Torrent.File.BitField, as: BitFieldServer
   alias BitTorrent.Message
+  alias BitTorrent.Torrent.File.Controller, as: FileWriter
 
   require Logger
 
@@ -22,7 +23,7 @@ defmodule BitTorrent.Peer.Message.Handler do
 
   def handle_message({:choke}, state) do
     Logger.info("Handling choke message")
-    case BitFieldServer.get_available_pieces.full?(state.bitfield_name) do
+    case BitFieldServer.full?(state.bitfield_name) do
       true ->
         %{state | peer_choking: true, am_interested: false}
         {state, Message.build(:not_interested)}
@@ -53,6 +54,7 @@ defmodule BitTorrent.Peer.Message.Handler do
   def handle_message({:piece, index, begin, block}, %{current_offset: offset, piece_length: length, current_piece: piece} = state)
     when offset < length do
       BitFieldServer.put_piece(state.bitfield_name, index)
+      FileWriter.write_to_file(state.file_name, index, begin, state.piece_length, block)
       {state, message} = _create_request_message(state)
   end
 
@@ -60,6 +62,7 @@ defmodule BitTorrent.Peer.Message.Handler do
     when piece == nil or offset >= length do
       Logger.info("Received full piece and choosing another")
       BitFieldServer.put_piece(state.bitfield_name, index)
+      FileWriter.write_to_file(state.file_name, index, begin, state.piece_length, block)
       [piece | pieces_tail] = state.pieces_indexes
       {state, message} = _create_request_message(%{state | current_piece: piece, pieces_indexes: pieces_tail, current_offset: 0})
   end

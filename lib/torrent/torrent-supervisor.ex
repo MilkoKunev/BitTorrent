@@ -34,8 +34,12 @@ defmodule BitTorrent.Torrent.Sup do
     bitfield_name = Utils.generate_id()
     bitfield = BitFieldSet.new!(<<0::size(bitfield_size)>>, bitfield_size)
 
+    file_server_name = Utils.generate_id()
+
     # TODO: Think of a better way for updating servers' names
-    torrent = %{torrent | bitfield_name: bitfield_name}
+    torrent = %{torrent | bitfield_name: bitfield_name, file_name: file_server_name}
+
+    file_supervisor_name = Utils.generate_id()
 
     children = [
       %{
@@ -48,6 +52,11 @@ defmodule BitTorrent.Torrent.Sup do
         start: {BitTorrent.Swarm.Sup, :start_link, [[torrent: torrent, name: swarm_name]]},
         type: :supervisor
       },
+      %{
+        id: file_server_name,
+        start: {BitTorrent.Torrent.File.Sup, :start_link, [[name: file_supervisor_name, file_server_name: file_server_name, file_name: torrent.name]]},
+        type: :supervisor
+      }
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
