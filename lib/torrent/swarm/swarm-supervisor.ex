@@ -9,9 +9,8 @@ defmodule BitTorrent.Swarm.Sup do
 
   def init(torrent) do
     {torrent, children} = create_children_specs(torrent.peers, torrent, [])
-    Supervisor.init(children, strategy: :one_for_one)
+    Supervisor.init(children, strategy: :one_for_all)
   end
-
 
   defp create_children_specs([], torrent, acc) do
     {torrent, acc}
@@ -66,7 +65,8 @@ defmodule BitTorrent.Swarm.Sup do
         BitTorrent.Peer.Transmiter,
         :start_link,
         [[name: torrent.transmiter_name, controller_name: torrent.controller_name]]
-      }
+      },
+      restart: :temporary
     }
 
     acc = [transmiter_spec | acc]

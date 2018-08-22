@@ -37,12 +37,10 @@ defmodule BitTorrent.Connection.Handler do
   end
 
   def handle_info({ref, {:ok, data}}, state) do
-    IO.inspect("RECEIVED MESSAGE")
     # TODO: Check if returned handshake is the same as our
     message =  Message.decode(data)
-    [handshake | _tail] = message
-    key = Map.get(handshake, :info_hash)
-    {_info_hash, from = {pid, _ref}, socket} = Map.get(state, key)
+    {:handshake, _pstr, _reserved_, info_hash, _peer_id, _length} = message
+    {_info_hash, from = {pid, _ref}, socket} = Map.get(state, info_hash)
     case :gen_tcp.controlling_process(socket, pid) do
       :ok ->
         GenServer.reply(from, {:ok, socket})
@@ -53,7 +51,6 @@ defmodule BitTorrent.Connection.Handler do
   end
 
   def handle_info({:DOWN, _, _, _, _}, state) do
-    IO.inspect ("Task ended")
     {:noreply, state}
   end
 

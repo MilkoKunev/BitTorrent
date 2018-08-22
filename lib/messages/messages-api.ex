@@ -6,7 +6,7 @@ defmodule BitTorrent.Message do
   @pstr "BitTorrent protocol"
   @pstrlen 19
   @reserved_bits <<0::size(64)>>
-  @block_length 16384
+  @block_length Application.get_env(:bittorrent, :block_length)
 
   # Fixed lengths
   @keep_alive_length 0
@@ -57,114 +57,91 @@ defmodule BitTorrent.Message do
 
   # TODO: Add build methods for :have, :bitfield, :piece, when acceptor/listener is implemeented
 
-  def decode(message) do
-    _decode(message, [])
+  def decode_length(<<length::size(32)>>) do
+    length
   end
 
-  defp _decode(<<@pstrlen::size(8), pstr::bytes-size(@pstrlen), reserved::bytes-size(8), info_hash::bytes-size(20), peer_id::bytes-size(20), rest::bytes>>, acc) do
-      data =
-        %{
-          type: :handshake,
-          pstr: pstr,
-          reserved: reserved,
-          info_hash: info_hash,
-          peer_id: peer_id,
-          length: 68
-        }
-      _decode(rest, acc ++ [data])
+  # def decode(message) do
+  #   _decode(message, [])
+  # end
+
+  def decode() do
+    {
+      :keep_alive
+    }
   end
 
-  defp _decode(<<@keep_alive_length::size(32), rest::bytes>>, acc) do
-    data =
-      %{
-        type: :keep_alive
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@pstrlen::size(8), pstr::bytes-size(@pstrlen), reserved::bytes-size(8), info_hash::bytes-size(20), peer_id::bytes-size(20)>>) do
+    {
+      :handshake,
+      pstr,
+      reserved,
+      info_hash,
+      peer_id,
+      68
+    }
   end
 
-  defp _decode(<<@state_length::size(32), @choke_id::size(8), rest::bytes>>, acc) do
-    data =
-      %{
-        type: :choke,
-        length: @state_length
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@choke_id::size(8)>>) do
+    {
+      :choke
+    }
   end
 
-  defp _decode(<<@state_length::size(32), @unchoke_id::size(8), rest::bytes>>, acc) do
-    data =
-      %{
-        type: :unchoke,
-        length: @state_length
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@unchoke_id::size(8)>>) do
+    Logger.info("Decoding unchoke message")
+    {
+      :unchoke
+    }
   end
 
-  defp _decode(<<@state_length::size(32), @interested_id::size(8), rest::bytes>>, acc) do
-    data =
-      %{
-        type: :interested,
-        length: @state_length
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@interested_id::size(8)>>, acc) do
+    {
+      :interested
+    }
   end
 
-  defp _decode(<<@state_length::size(32), @not_interested_id::size(8), rest::bytes>>, acc) do
-    data =
-      %{
-        type: :not_interested,
-        length: @state_length
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@not_interested_id::size(8)>>) do
+    {
+      :not_interested
+    }
   end
 
-  defp _decode(<<@have_length::size(32), @have_id::size(8), piece_index::size(32), rest::bytes>>, acc) do
-    data =
-      %{
-        type: :have,
-        piece_index: piece_index,
-        length: @have_length
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@have_id::size(8), piece_index::size(32)>>) do
+    Logger.info("Decoding have message")
+    {
+      :have,
+      piece_index
+    }
   end
 
-  defp _decode(<<length::size(32), @bitfield_id::size(8), rest::bytes>>, acc) do
-    length = length - 1
-    <<bitfield::bytes-size(length), rest::bytes>> = rest
-    data =
-      %{
-        type: :bitfield,
-        bitfield: bitfield,
-        length: length * 8
-      }
-    _decode(rest, acc ++ [data])
+  def decode(<<@bitfield_id::size(8), bitfield::bytes>>) do
+    Logger.info("Decoding BitField message")
+    {
+      :bitfield,
+      bitfield,
+    }
   end
 
-  defp _decode(<<length::size(32), @piece_id::size(8), index::size(32), begin::size(32), rest::bytes>>, acc) do
-    length = length - 9
-    <<block::bytes-size(length), rest::bytes>> = rest
-    data =
-      %{
-        type: :piece,
-        index: index,
-        offset: begin,
-        block: block,
-        length: length * 8
-     }
-    _decode(rest, acc ++ [data])
+  def decode(<<@piece_id::size(8), index::size(32), begin::size(32), block::bytes-size(@block_length)>>) do
+    Logger.info("Decoding piece message")
+    Logger.info("Recieved block with index #{index}, with offset #{begin}")
+    {
+      :piece,
+      index,
+      begin,
+      block
+    }
   end
 
-  defp _decode(binary, acc) when byte_size(binary) == 0 do
-    acc
-  end
-
-  defp _decode(binary, acc) do
-    data =
-      %{
-        type: :unknown
-      }
-
-    acc ++ [data]
+  def decode(binary) do
+    Logger.info("Decoding unknown message")
+    Logger.info(byte_size(binary))
+    IO.inspect(binary)
+    {
+      :unknown,
+      binary
+    }
   end
 
   # TODO: Add request decode message when acceptor/listener is implemented

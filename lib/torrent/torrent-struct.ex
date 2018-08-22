@@ -5,6 +5,9 @@ defmodule Torrent do
      bitfield_length: nil,
      length: nil,
      pieces: nil,
+     pieces_indexes: [],
+     current_piece: nil,
+     current_offset: 0,
      name: nil,
      block_length: nil,
      peers: [],
@@ -16,7 +19,7 @@ defmodule Torrent do
      controller_name: nil,
      receiver_name: nil,
      transmiter_name: nil,
-     bitfield_name: nil
+     bitfield_name: nil,
     )
 
     def new(info_hash, piece_length, length, pieces, name, block_length, peers) do
@@ -28,7 +31,9 @@ defmodule Torrent do
             name: name,
             block_length: block_length,
             peers: peers,
-        } |> calculate_bitfield_length()
+        }
+        |> calculate_bitfield_length()
+        |> create_piece_list()
     end
 
     def add_server_names(torrent, controller, receiver, transmiter) do
@@ -39,11 +44,15 @@ defmodule Torrent do
         value = torrent.length / torrent.piece_length
         value = case value do
             value when value == 0 ->
-                trunc(value)
+                trunc(value) - 1
             _ ->
-                trunc(value) + 1
+                trunc(value)
         end
         %{torrent | bitfield_length: value}
+    end
+
+    defp create_piece_list(torrent) do
+        %{torrent | pieces_indexes: Enum.to_list(0..torrent.bitfield_length)}
     end
 
 end
