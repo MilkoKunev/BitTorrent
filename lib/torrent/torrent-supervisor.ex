@@ -12,8 +12,6 @@ defmodule BitTorrent.Torrent.Sup do
     port = Application.get_env(:bittorrent, :port)
     block_length = Application.get_env(:bittorrent, :block_length)
 
-    IO.inspect client_id
-
     announce = Map.get(torrent_info, "announce")
     info = Map.get(torrent_info, "info")
     info_hash = Map.get(torrent_info, "info_hash")
@@ -30,7 +28,7 @@ defmodule BitTorrent.Torrent.Sup do
 
     torrent = Torrent.new(info_hash, piece_length, length, pieces, name, block_length, peers)
 
-    swarm_id = Utils.generate_id()
+    swarm_name = Utils.generate_id()
 
     bitfield_size = torrent.bitfield_length
     bitfield_name = Utils.generate_id()
@@ -46,11 +44,10 @@ defmodule BitTorrent.Torrent.Sup do
         type: :worker
       },
       %{
-        id: swarm_id,
-        start: {BitTorrent.Swarm.Sup, :start_link, [[torrent: torrent]]},
-        restart: :temporary,
+        id: swarm_name,
+        start: {BitTorrent.Swarm.Sup, :start_link, [[torrent: torrent, name: swarm_name]]},
         type: :supervisor
-      }
+      },
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
