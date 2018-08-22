@@ -30,4 +30,17 @@ defmodule BitTorrent.Torrent.File.BitField do
     end)
   end
 
+  def get_available_pieces(agent) do
+    Agent.get(agent, fn bitfield ->
+      BitFieldSet.to_list(bitfield)
+    end)
+  end
+
+  def get_remaining_piece(agent, current_list) do
+    Agent.get(agent, fn bitfield ->
+      [remaining_piece | _tail] = current_list -- BitFieldSet.to_list(bitfield)
+      remaining_piece
+    end)
+  end
+
 end
