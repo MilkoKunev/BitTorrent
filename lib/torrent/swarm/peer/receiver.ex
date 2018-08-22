@@ -5,17 +5,14 @@ defmodule BitTorrent.Peer.Receiver do
   alias BitTorrent.Connection.Handler
   alias BitTorrent.Message
 
+  require Logger
+
   def start_link(args) do
-    IO.inspect "FROM RECEIVER PROCESS"
     GenServer.start_link(__MODULE__, args, name: args[:name])
   end
 
   def get_state(server) do
     GenServer.call(server, :get_state)
-  end
-
-  def manually_receive_msg(server, length) do
-    GenServer.cast(server, {:receive, length})
   end
 
   def init(state) do
@@ -26,40 +23,16 @@ defmodule BitTorrent.Peer.Receiver do
       :gen_tcp.controlling_process(socket, pid)
       socket
     end)
-    {:ok, %{controller: state[:controller_name], socket: state[:socket]}}
+    {:ok, %{controller: state[:controller_name], socket: nil}}
   end
 
-  def handle_cast({:receive, length}, %{socket: socket} = state) do
-    case :gen_tcp.recv(socket, length) do
-      {:ok, msg} ->
-        message = Message.decode(msg)
-        send_to_controller(state.controller, message, socket)
-      {:error, _reason} ->
-        :inet.setopts(socket, active: :once)
-    end
-    {:noreply, state}
-  end
-
-  def handle_info({:tcp, socket, msg}, state) do
-      IO.inspect("RECEIVED MESSAGE RECIEVER")
-      message = Message.decode(msg)
-      send_to_controller(state.controller, message, socket)
-      {:noreply, state}
-  end
-
-  def handle_info({:tcp_closed, socket}, state) do
-    IO.inspect("Socket closed")
-    {:noreply, state}
-  end
-
-  def handle_info({ref, socket}, state) do
+  def handle_info({ref, socket}, %{controller: controller} = state) do
     IO.inspect "HANDLE INFO"
-    :inet.setopts(socket, active: :once)
-    {:noreply, state}
+    serve_socket(controller, socket)
+    {:noreply, %{state | socket: socket}}
   end
 
   def handle_info({:DOWN, _, _, _, _}, state) do
-    IO.inspect ("Task ended")
     {:noreply, state}
   end
 
@@ -67,13 +40,28 @@ defmodule BitTorrent.Peer.Receiver do
     {:reply, state, state}
   end
 
-  defp send_to_controller(controller, [], socket) do
-    :ok
-  end
-
-  defp send_to_controller(controller, [message | tail], socket) do
-    BitTorrent.Peer.Controller.handle_message(controller, message, socket)
-    send_to_controller(controller, tail, socket)
+  defp serve_socket(controller_name, socket) do
+    case :gen_tcp.recv(socket, 4) do
+      {:ok, length} ->
+        case length = Message.decode_length(length) do
+          0 ->
+            messages = Message.decode()
+            BitTorrent.Peer.Controller.handle_messages(controller_name, messages, socket)
+          _ ->
+            case :gen_tcp.recv(socket, length) do
+              {:ok, message} ->
+                message = Message.decode(message)
+                BitTorrent.Peer.Controller.handle_messages(controller_name, message, socket)
+              {:error, reason} ->
+                IO.inspect "ERROR receiving message"
+                IO.inspect reason
+            end
+        end
+      {:error, reason} ->
+        IO.inspect "Error receving length"
+        IO.inspect reason
+    end
+    serve_socket(controller_name, socket)
   end
 
 end
