@@ -1,6 +1,6 @@
 defmodule BitTorrent.File.Controller do
 
-  @torrents_dir "C:/Users/Milko Kunev/Desktop/Elixir/bittorrent/test/torrents/"
+  @torrents_dir Application.get_env(:bittorrent, :torrentsdir)
 
   def read_torrent(torrent_file) when is_bitstring(torrent_file) do
     file_path = @torrents_dir <> torrent_file
