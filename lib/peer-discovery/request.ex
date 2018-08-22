@@ -1,7 +1,6 @@
 defmodule BitTorrent.Discovery.Request do
 
   def send({info_hash, announce_url}) do
-    IO.inspect("Sending request")
     params = %{
       info_hash: info_hash,
       peer_id: Application.get_env(:bittorrent, :client_id),

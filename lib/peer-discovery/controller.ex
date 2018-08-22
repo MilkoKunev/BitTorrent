@@ -52,7 +52,6 @@ defmodule BitTorrent.Discovery.Controller do
   end
 
   def handle_info({ref, {:keeping_conn_alive, result}}, state) do
-    IO.inspect("Discovery: Received message")
     peers_map = case result do
       {:error, reason} ->
         Logger.info("Error in receiving peers: #{reason}")
@@ -64,7 +63,6 @@ defmodule BitTorrent.Discovery.Controller do
   end
 
   def handle_info({:DOWN, _, _, _, _}, state) do
-    IO.inspect ("Discovery task ended")
     {:noreply, state}
   end
 
