@@ -7,7 +7,8 @@ defmodule Bittorrent.Application do
       {Task.Supervisor, [name: BitTorrent.TaskSupervisor, type: :supervisor]},
       {BitTorrent.Discovery.Sup, [name: Discovery.Supervisor, type: :supervisor]},
       {DynamicSupervisor, [strategy: :one_for_one, name: BitTorrent.Torrents.Sup, type: :supervisor]},
-      {BitTorrent.Connection.Handler, []}
+      {BitTorrent.Connection.Handler, []},
+      {Task, &BitTorrent.CLI.main/0},
     ]
 
     opts = [strategy: :one_for_one, name: Bittorrent.Supervisor]

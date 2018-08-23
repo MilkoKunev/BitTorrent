@@ -28,20 +28,20 @@ defmodule BitTorrent.Torrent.File.Controller do
   end
 
   def handle_cast({:write, 0, 0, _piece_length, data}, state) do
-    Logger.info("Received block with index 0 and offset 0 ")
+    Logger.info("Writing block with index 0 and offset 0 ")
     IO.binwrite(state.file, data)
     {:noreply, state}
   end
 
   def handle_cast({:write, 0, offset, _piece_length, data}, state) do
-    Logger.info("Received block with index 0 and offset #{offset}")
+    Logger.info("Writing block with index 0 and offset offset #{offset}")
     :file.position(state.file, offset)
     IO.binwrite(state.file, data)
     {:noreply, state}
   end
 
   def handle_cast({:write, piece_index, 0, piece_length, data}, state) do
-    Logger.info("Received block with index #{piece_index} and offset 0")
+    Logger.info("Writing block with index #{piece_index} and offset 0")
     offset = piece_index * piece_length
     :file.position(state.file, offset)
     IO.binwrite(state.file, data)
@@ -49,7 +49,7 @@ defmodule BitTorrent.Torrent.File.Controller do
   end
 
   def handle_cast({:write, piece_index, offset, piece_length, data}, state) do
-    Logger.info("Received block with index #{piece_index} and #{offset}")
+    Logger.info("Writing block with index #{piece_index} and offset #{offset}")
     offset = (piece_index * piece_length) + offset
     :file.position(state.file, offset)
     IO.binwrite(state.file, data)
