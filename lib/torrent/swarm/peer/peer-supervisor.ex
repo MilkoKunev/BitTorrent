@@ -9,7 +9,7 @@ defmodule BitTorrent.Peer.Sup do
   end
 
   def init(torrent) do
-    {torrent, children} = create_children_specs(torrent.peers, torrent, [])
+    {_torrent, children} = create_children_specs(torrent.peers, torrent, [])
     Supervisor.init(children, strategy: :one_for_all)
   end
 

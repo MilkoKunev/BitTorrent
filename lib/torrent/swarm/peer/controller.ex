@@ -2,10 +2,7 @@ defmodule BitTorrent.Peer.Controller do
 
   use GenServer
 
-  alias BitTorrent.Connection.Handler
   alias BitTorrent.Peer.Message.Handler, as: MessageHandler
-  alias BitTorrent.Peer.Receiver
-  alias BitTorrent.Peer.Transmiter
 
   require Logger
 
@@ -25,7 +22,7 @@ defmodule BitTorrent.Peer.Controller do
     case {state, created_message} = MessageHandler.handle_message(message, state) do
       {state, nil} ->
         state
-      {state, :download_complete} ->
+      {_state, :download_complete} ->
         Logger.info("Download complete :)")
       _ ->
         BitTorrent.Peer.Transmiter.send_message(state.transmiter_name, created_message, socket)

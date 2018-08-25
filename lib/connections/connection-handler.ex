@@ -28,18 +28,16 @@ defmodule BitTorrent.Connection.Handler do
           # Get only handshake message, which is exactly 68 bytes
           :gen_tcp.recv(socket, 68)
         end)
-        # TODO: Set peer_id or something else as key. Problem:
-        # Returned peer_id from handshake is different each time
+        # TODO: Set something else as key
         {:noreply, Map.put(state, info_hash, {info_hash, from, socket})}
-      {:error, reason} ->
+      {:error, _reason} ->
         {:reply, :error, state}
       end
   end
 
-  def handle_info({ref, {:ok, data}}, state) do
+  def handle_info({_ref, {:ok, data}}, state) do
     # TODO: Check if returned handshake is the same as our
-    message =  Message.decode(data)
-    {:handshake, _pstr, _reserved_, info_hash, _peer_id, _length} = message
+    {:handshake, _pstr, _reserved_, info_hash, _peer_id, _length} =  Message.decode(data)
     {_info_hash, from = {pid, _ref}, socket} = Map.get(state, info_hash)
     case :gen_tcp.controlling_process(socket, pid) do
       :ok ->

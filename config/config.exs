@@ -33,6 +33,6 @@ config :bittorrent,
         port: 6881,
         client_id: "-qB3310-1234567890.f",
         block_length: 16384,
-        torrentsdir: "c:/Users/Milko Kunev/Desktop/Elixir/bittorrent/test/torrents/",
-        downloadsdir: "c:/Users/Milko Kunev/Desktop/Elixir/bittorrent/test/downloads/"
+        torrentsdir: "c:/Users/Milko Kunev/Desktop/BitTorrent/test/torrents/",
+        downloadsdir: "c:/Users/Milko Kunev/Desktop/BitTorrent/test/downloads/"
 

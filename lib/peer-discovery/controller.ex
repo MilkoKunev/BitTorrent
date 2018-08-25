@@ -40,9 +40,9 @@ defmodule BitTorrent.Discovery.Controller do
     end
   end
 
-  def handle_info({ref, {:received_peers, from, result}}, state) do
+  def handle_info({_ref, {:received_peers, from, result}}, state) do
     case result do
-      {:error, reason} ->
+      {:error, _reason} ->
         GenServer.reply(from, nil)
         {:noreply, state}
       {:ok, {info_hash, peers}} ->
@@ -51,15 +51,15 @@ defmodule BitTorrent.Discovery.Controller do
     end
   end
 
-  def handle_info({ref, {:keeping_conn_alive, result}}, state) do
-    peers_map = case result do
+  def handle_info({_ref, {:keeping_conn_alive, result}}, state) do
+    peer_map = case result do
       {:error, reason} ->
         Logger.info("Error in receiving peers: #{reason}")
         state.peers
       {:ok, {info_hash, peers}} ->
         Map.put(state.peers, info_hash, peers)
     end
-    {:noreply, state}
+    {:noreply, %{state | peers: peer_map}}
   end
 
   def handle_info({:DOWN, _, _, _, _}, state) do

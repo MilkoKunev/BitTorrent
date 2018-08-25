@@ -56,5 +56,4 @@ defmodule BitTorrent.Torrent.File.Controller do
     {:noreply, state}
   end
 
-
 end

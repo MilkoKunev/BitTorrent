@@ -9,7 +9,7 @@ defmodule BitTorrent.Torrent.Sup do
 
   def init(torrent_info) do
     client_id = Application.get_env(:bittorrent, :client_id)
-    port = Application.get_env(:bittorrent, :port)
+    _port = Application.get_env(:bittorrent, :port)
     block_length = Application.get_env(:bittorrent, :block_length)
 
     announce = Map.get(torrent_info, "announce")

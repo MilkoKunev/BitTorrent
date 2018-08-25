@@ -47,12 +47,12 @@ defmodule BitTorrent.Message do
     <<@state_length::size(32), @unchoke_id::size(8)>>
   end
 
-  def build(:request, index, offset, length) do
-    <<@request_length::size(32), @request_id::size(8), index::size(32), offset::size(32), length::size(32)>>
-  end
-
   def build(:keep_alive) do
     <<@keep_alive_length::size(32)>>
+  end
+
+  def build(:request, index, offset, length) do
+    <<@request_length::size(32), @request_id::size(8), index::size(32), offset::size(32), length::size(32)>>
   end
 
   # TODO: Add build methods for :have, :bitfield, :piece, when acceptor/listener is implemeented
@@ -114,7 +114,6 @@ defmodule BitTorrent.Message do
   def decode(binary) do
     Logger.info("Decoding unknown message")
     Logger.info(byte_size(binary))
-    IO.inspect(binary)
     {:unknown, binary}
   end
 

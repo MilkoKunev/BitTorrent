@@ -26,8 +26,7 @@ defmodule BitTorrent.Peer.Receiver do
     {:ok, %{controller: state[:controller_name], socket: nil}}
   end
 
-  def handle_info({ref, socket}, %{controller: controller} = state) do
-    IO.inspect "HANDLE INFO"
+  def handle_info({_ref, socket}, %{controller: controller} = state) do
     serve_socket(controller, socket)
     {:noreply, %{state | socket: socket}}
   end
@@ -36,7 +35,7 @@ defmodule BitTorrent.Peer.Receiver do
     {:noreply, state}
   end
 
-  def handle_call(:get_state, from, state) do
+  def handle_call(:get_state, _from, state) do
     {:reply, state, state}
   end
 
@@ -52,16 +51,14 @@ defmodule BitTorrent.Peer.Receiver do
               {:ok, message} ->
                 message = Message.decode(message)
                 BitTorrent.Peer.Controller.handle_messages(controller_name, message, socket)
+                serve_socket(controller_name, socket)
               {:error, reason} ->
-                IO.inspect "ERROR receiving message"
-                IO.inspect reason
+                Logger.info("Error receiving message: #{reason}")
             end
         end
       {:error, reason} ->
-        IO.inspect "Error receving length"
-        IO.inspect reason
+        Logger.info("Error receiving message: #{reason}")
     end
-    serve_socket(controller_name, socket)
   end
 
 end

@@ -5,7 +5,7 @@ defmodule BitTorrent.Discovery.Sup do
     Supervisor.start_link(__MODULE__, args, name: __MODULE__)
   end
 
-  def init(args) do
+  def init(_args) do
     children = [
       %{
         id: Peer.Controller,

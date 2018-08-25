@@ -51,7 +51,7 @@ defmodule BitTorrent.Peer.Message.Handler do
     {state, nil}
   end
 
-  def handle_message({:piece, index, begin, block}, %{current_offset: offset, piece_length: length, current_piece: piece} = state)
+  def handle_message({:piece, index, begin, block}, %{current_offset: offset, piece_length: length} = state)
     when offset < length do
       BitFieldServer.put_piece(state.bitfield_name, index)
       FileWriter.write_to_file(state.file_name, index, begin, state.piece_length, block)

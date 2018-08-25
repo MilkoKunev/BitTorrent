@@ -50,12 +50,11 @@ defmodule BitTorrent.CLI do
          receive_command()
      end
 
-     IO.inspect(torrent)
      start_torrent(torrent)
   end
 
   defp print_help_message do
-    IO.puts("\nEltorrent supports following  commands:\n")
+    IO.puts("\nBitTorrent supports following  commands:\n")
     @commands
     |> Enum.map(fn({command, description}) ->
          IO.puts("  #{command} - #{description}")
